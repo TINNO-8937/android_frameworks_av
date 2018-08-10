@@ -99,7 +99,7 @@ public:
 
     /////////////////////////////////////////////////////////////////////
     // HAL Callbacks
-    virtual void        onDeviceStatusChanged(int cameraId,
+    virtual void        onDeviceStatusChanged(camera_device_status_t cameraId,
                                               camera_device_status_t newStatus);
     virtual void        onTorchStatusChanged(const String8& cameraId,
                                              int32_t newStatus);

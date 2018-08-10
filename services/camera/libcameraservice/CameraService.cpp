@@ -103,7 +103,7 @@ static void camera_device_status_change(
     sp<CameraService> cs = const_cast<CameraService*>(
             static_cast<const CameraService*>(callbacks));
 
-    cs->onDeviceStatusChanged(camera_id,
+    cs->onDeviceStatusChanged(static_cast<camera_device_status_t>(camera_id),
             static_cast<camera_device_status_t>(new_status));
 }
 
@@ -296,7 +296,7 @@ CameraService::~CameraService() {
     gCameraService = nullptr;
 }
 
-void CameraService::onDeviceStatusChanged(int cameraId,
+void CameraService::onDeviceStatusChanged(camera_device_status_t  cameraId,
         camera_device_status_t newStatus) {
     ALOGI("%s: Status changed for cameraId=%d, newStatus=%d", __FUNCTION__,
           cameraId, newStatus);
