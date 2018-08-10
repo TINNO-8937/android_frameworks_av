@@ -467,8 +467,8 @@ Status CameraService::getCameraInfo(int cameraId,
         // CameraInfo is for android.hardware.Camera which does not
         // support external camera facing. The closest approximation would be
         // front camera.
-        if (cameraInfo->facing == CAMERA_FACING_EXTERNAL) {
-            cameraInfo->facing = CAMERA_FACING_FRONT;
+        if (cameraInfo->orientation == CAMERA_FACING_EXTERNAL) {
+            cameraInfo->orientation = CAMERA_FACING_FRONT;
         }
     }
     return rc;
@@ -2539,8 +2539,7 @@ status_t CameraService::dump(int fd, const Vector<String16>& args) {
                 write(fd, result.string(), result.size());
             } else {
                 result.appendFormat("  Facing: %s\n",
-                        info.facing == CAMERA_FACING_BACK ? "BACK" :
-                                info.facing == CAMERA_FACING_FRONT ? "FRONT" : "EXTERNAL");
+                        info.facing == CAMERA_FACING_BACK ? "BACK" : "FRONT");
                 result.appendFormat("  Orientation: %d\n", info.orientation);
                 int deviceVersion;
                 if (mModule->getModuleApiVersion() < CAMERA_MODULE_API_VERSION_2_0) {
