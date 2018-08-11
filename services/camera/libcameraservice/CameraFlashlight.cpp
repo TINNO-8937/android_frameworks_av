@@ -97,7 +97,7 @@ status_t CameraFlashlight::createFlashlightControl(const String8& cameraId) {
     return OK;
 }
 
-status_t CameraFlashlight::setTorchMode(const String8& cameraId, bool enabled) {
+status_t CameraFlashlight::setTorchModeLocked(const String8& cameraId, bool enabled) {
     if (!mFlashlightMapInitialized) {
         ALOGE("%s: findFlashUnits() must be called before this method.",
                __FUNCTION__);
@@ -108,7 +108,6 @@ status_t CameraFlashlight::setTorchMode(const String8& cameraId, bool enabled) {
             cameraId.string(), enabled);
 
     status_t res = OK;
-    Mutex::Autolock l(mLock);
 
     if (mOpenedCameraIds.indexOf(cameraId) != NAME_NOT_FOUND) {
         // This case is needed to avoid state corruption during the following call sequence:
@@ -152,6 +151,11 @@ status_t CameraFlashlight::setTorchMode(const String8& cameraId, bool enabled) {
     }
 
     return res;
+}
+
+status_t CameraFlashlight::setTorchMode(const String8& cameraId, bool enabled) {
+    Mutex::Autolock l(mLock);
+    return setTorchModeLocked(cameraId, enabled);
 }
 
 status_t CameraFlashlight::findFlashUnits() {
@@ -229,8 +233,8 @@ status_t CameraFlashlight::prepareDeviceOpen(const String8& cameraId) {
         // should be closed for backward compatible support.
         mFlashControl.clear();
 
+        // notify torch unavailable for all cameras with a flash
         if (mOpenedCameraIds.size() == 0) {
-            // notify torch unavailable for all cameras with a flash
             int numCameras = mCameraModule->getNumberOfCameras();
             for (int i = 0; i < numCameras; i++) {
                 if (hasFlashUnitLocked(String8::format("%d", i))) {
@@ -243,6 +247,19 @@ status_t CameraFlashlight::prepareDeviceOpen(const String8& cameraId) {
 
         // close flash control that may be opened by calling hasFlashUnitLocked.
         mFlashControl.clear();
+
+        // Unlock mutex
+        Mutex::Autolock al(mLock);
+    } else {
+        // notify torch unavailable for all cameras with a flash
+        int numCameras = mCameraModule->getNumberOfCameras();
+        for (int i = 0; i < numCameras; i++) {
+            if (hasFlashUnitLocked(String8::format("%d", i))) {
+                setTorchModeLocked((String8::format("%d", i)), 0);
+                mCallbacks->torch_mode_status_change(mCallbacks,
+                        cameraId.string(), TORCH_MODE_STATUS_NOT_AVAILABLE);
+            }
+        }
     }
 
     if (mOpenedCameraIds.indexOf(cameraId) == NAME_NOT_FOUND) {
@@ -274,15 +291,13 @@ status_t CameraFlashlight::deviceClosed(const String8& cameraId) {
     if (mOpenedCameraIds.size() != 0)
         return OK;
 
-    if (mCameraModule->getModuleApiVersion() < CAMERA_MODULE_API_VERSION_2_4) {
-        // notify torch available for all cameras with a flash
-        int numCameras = mCameraModule->getNumberOfCameras();
-        for (int i = 0; i < numCameras; i++) {
-            if (hasFlashUnitLocked(String8::format("%d", i))) {
-                mCallbacks->torch_mode_status_change(mCallbacks,
-                        String8::format("%d", i).string(),
-                        TORCH_MODE_STATUS_AVAILABLE_OFF);
-            }
+    // notify torch available for all cameras with a flash
+    int numCameras = mCameraModule->getNumberOfCameras();
+    for (int i = 0; i < numCameras; i++) {
+        if (hasFlashUnitLocked(String8::format("%d", i))) {
+            setTorchModeLocked((String8::format("%d", i)), 0);
+            mCallbacks->torch_mode_status_change(mCallbacks,
+                cameraId.string(), TORCH_MODE_STATUS_AVAILABLE_OFF);
         }
     }
 

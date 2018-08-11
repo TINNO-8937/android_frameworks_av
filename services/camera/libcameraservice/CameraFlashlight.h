@@ -66,6 +66,7 @@ class CameraFlashlight : public virtual VirtualLightRefBase {
         bool hasFlashUnit(const String8& cameraId);
 
         // set the torch mode to on or off.
+        status_t setTorchModeLocked(const String8& cameraId, bool enabled);
         status_t setTorchMode(const String8& cameraId, bool enabled);
 
         // Notify CameraFlashlight that camera service is going to open a camera
